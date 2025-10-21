@@ -50,3 +50,43 @@ databaseChangeLog:
       rollback:
         - dropTable:
             tableName: cards
+  - changeSet:
+      id: 2-add-owner-id-to-cards
+      author: codex
+      changes:
+        - addColumn:
+            tableName: cards
+            columns:
+              - column:
+                  name: owner_id
+                  type: UUID
+      rollback:
+        - dropColumn:
+            tableName: cards
+            columnName: owner_id
+  - changeSet:
+      id: 3-create-clients-table
+      author: codex
+      changes:
+        - createTable:
+            tableName: clients
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: login
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: password
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropTable:
+            tableName: clients

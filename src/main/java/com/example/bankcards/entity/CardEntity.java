@@ -1,9 +1,10 @@
 package com.example.bankcards.entity;
 
 import com.example.bankcards.entity.enums.CardStatus;
-import com.example.bankcards.util.AesGcmAttributeConverter;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.UUID;
 
 @Entity
 @AllArgsConstructor
@@ -19,7 +20,6 @@ public class CardEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Convert(converter = AesGcmAttributeConverter.class)
     @Column(name = "pan_encrypted", length = 1024, nullable = false)
     private String panEncrypted;
 
@@ -28,6 +28,9 @@ public class CardEntity {
 
     @Column(name = "pan_hash", length = 128, nullable = false, unique = true)
     private String panHash;
+
+    @Column(name = "owner_id")
+    private UUID ownerId;
 
     @Enumerated(EnumType.STRING)
     private CardStatus status;

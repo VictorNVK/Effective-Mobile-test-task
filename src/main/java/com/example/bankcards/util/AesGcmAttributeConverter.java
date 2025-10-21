@@ -21,7 +21,7 @@ public class AesGcmAttributeConverter implements AttributeConverter<String, Stri
 
     private final SecretKey secretKey;
 
-    AesGcmAttributeConverter(String base64Key) {
+    public AesGcmAttributeConverter(String base64Key) {
         if (base64Key == null || base64Key.isBlank()) {
             throw new IllegalStateException("Encryption key must be provided");
         }
@@ -30,14 +30,6 @@ public class AesGcmAttributeConverter implements AttributeConverter<String, Stri
             throw new IllegalStateException("Encryption key must be 32 bytes (256 bit)");
         }
         this.secretKey = new SecretKeySpec(keyBytes, "AES");
-    }
-
-    private static String resolveKeyFromEnv() {
-        String base64Key = System.getenv(KEY_ENV);
-        if (base64Key == null || base64Key.isBlank()) {
-            throw new IllegalStateException("Encryption key not found in environment variable: " + KEY_ENV);
-        }
-        return base64Key;
     }
 
     @Override
