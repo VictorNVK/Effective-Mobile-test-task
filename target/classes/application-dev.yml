@@ -7,7 +7,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate   # схему меняем только миграциями Liquibase
+      ddl-auto: create #Поменять на Validate
     show-sql: true
     properties:
       hibernate:
@@ -15,9 +15,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
   liquibase:
-    change-log: classpath:db/changelog/db.changelog-master.yaml
+    change-log: classpath:db/migration/db.changelog-master.yaml
     enabled: true
-    # contexts: dev   # при желании включай dev-контексты
 
 springdoc:
   api-docs:
@@ -32,4 +31,4 @@ logging:
   level:
     root: INFO
     org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE   # логировать параметры запросов (осторожно на проде)
+    org.hibernate.orm.jdbc.bind: TRACE

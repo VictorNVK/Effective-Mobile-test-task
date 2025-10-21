@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1-create-cards-table
+      author: codex
+      changes:
+        - createTable:
+            tableName: cards
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: pan_encrypted
+                  type: VARCHAR(1024)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last4
+                  type: VARCHAR(4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pan_hash
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+              - column:
+                  name: balance
+                  type: BIGINT
+              - column:
+                  name: expiry_month
+                  type: INTEGER
+              - column:
+                  name: expiry_year
+                  type: INTEGER
+        - createIndex:
+            tableName: cards
+            indexName: idx_cards_pan_hash
+            columns:
+              - column:
+                  name: pan_hash
+      rollback:
+        - dropTable:
+            tableName: cards

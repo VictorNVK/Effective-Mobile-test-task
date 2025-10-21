@@ -17,7 +17,7 @@ spring:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
   liquibase:
-    change-log: ${SPRING_LIQUIBASE_CHANGELOG:classpath:db/changelog/db.changelog-master.yaml}
+    change-log: ${SPRING_LIQUIBASE_CHANGELOG:classpath:db/migration/db.changelog-master.yaml}
     enabled: ${SPRING_LIQUIBASE_ENABLED:true}
 
 server:
