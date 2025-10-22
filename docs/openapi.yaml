@@ -7,10 +7,16 @@ info:
     environment; once authentication is in place, update the `security` section accordingly.
 servers:
   - url: http://localhost:8901/api/v3
-    description: Local development
+    description: Local Spring Boot backend
+  - url: http://127.0.0.1:8901/api/v3
+    description: Localhost alias (for Swagger/IDEA)
+  - url: http://localhost:63342
+    description: IntelliJ internal server (read-only, do not use)
+x-localhost-example: http://localhost:8901/api/v3
 tags:
   - name: Admin
     description: Administrative operations over cards
+
 paths:
   /admin/card/create:
     post:
@@ -18,9 +24,6 @@ paths:
         - Admin
       operationId: createCard
       summary: Создать карту для клиента
-      description: >
-        Выпускает новую карту для переданного клиента. В ответ возвращается зашифрованная карта
-        и вспомогательные данные. Сырый PAN возвращается только в ответе на этот запрос.
       requestBody:
         required: true
         content:
@@ -48,6 +51,69 @@ paths:
             text/plain:
               schema:
                 type: string
+
+  /admin/card/{cardId}/block:
+    patch:
+      tags:
+        - Admin
+      operationId: blockCard
+      summary: Заблокировать карту
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Идентификатор карты
+          example: 1
+      responses:
+        '200':
+          description: Статус карты обновлён на BLOCKED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponseDto'
+        '404':
+          description: Карта не найдена
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /admin/card/{cardId}/activate:
+    patch:
+      tags:
+        - Admin
+      operationId: activateCard
+      summary: Активировать карту
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Идентификатор карты
+          example: 1
+      responses:
+        '200':
+          description: Статус карты обновлён на ACTIVE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponseDto'
+        '404':
+          description: Карта не найдена
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
 components:
   schemas:
     CardCreateRequestDto:
@@ -59,6 +125,8 @@ components:
           type: string
           format: uuid
           description: Идентификатор клиента, которому будет принадлежать карта
+          example: "550e8400-e29b-41d4-a716-446655440000"
+
     CardCreateResponseDto:
       type: object
       properties:
@@ -66,21 +134,56 @@ components:
           type: integer
           format: int64
           description: Уникальный идентификатор созданной карты
+          example: 1
         ownerId:
           type: string
           format: uuid
           description: Идентификатор владельца карты
+          example: "550e8400-e29b-41d4-a716-446655440000"
         maskedPan:
           type: string
-          description: Маскированный номер карты для отображения в интерфейсе
+          description: Маскированный номер карты
+          example: "**** **** **** 1234"
         expiryMonth:
           type: integer
-          minimum: 1
-          maximum: 12
           description: Месяц окончания срока действия
+          example: 12
         expiryYear:
           type: integer
           description: Год окончания срока действия
+          example: 2027
         plainPan:
           type: string
           description: Сырый PAN, возвращается только при создании карты
+          example: "5483450012345678"
+
+    CardResponseDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный идентификатор карты
+          example: 1
+        ownerId:
+          type: string
+          format: uuid
+          description: Идентификатор владельца карты
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        status:
+          type: string
+          enum: [ACTIVE, BLOCKED, EXPIRED]
+          description: Текущий статус карты
+          example: BLOCKED
+        maskedPan:
+          type: string
+          description: Маскированный номер карты
+          example: "**** **** **** 1234"
+        expiryMonth:
+          type: integer
+          description: Месяц окончания срока действия
+          example: 12
+        expiryYear:
+          type: integer
+          description: Год окончания срока действия
+          example: 2027

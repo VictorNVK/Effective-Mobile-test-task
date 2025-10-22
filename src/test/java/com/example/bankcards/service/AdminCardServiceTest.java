@@ -2,6 +2,7 @@ package com.example.bankcards.service;
 
 import com.example.bankcards.dto.request.CardCreateRequestDto;
 import com.example.bankcards.dto.response.CardCreateResponseDto;
+import com.example.bankcards.dto.response.CardResponseDto;
 import com.example.bankcards.entity.CardEntity;
 import com.example.bankcards.entity.enums.CardStatus;
 import com.example.bankcards.repository.CardEntityRepository;
@@ -20,6 +21,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -149,7 +151,7 @@ class AdminCardServiceTest {
     @DisplayName("createCard returns 500 Internal Server Error on unexpected failures")
     void createCardUnexpectedError() {
         UUID ownerId = UUID.randomUUID();
-        CardCreateRequestDto request = buildRequest(ownerId);
+       CardCreateRequestDto request = buildRequest(ownerId);
 
         when(clientEntityRepository.existsClientEntityById(ownerId)).thenReturn(true);
         when(cardNumberGenerator.generate()).thenThrow(new RuntimeException("generator failed"));
@@ -158,5 +160,91 @@ class AdminCardServiceTest {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals("generator failed", response.getBody());
+    }
+
+    @Test
+    @DisplayName("activateCard switches status to ACTIVE when card exists")
+    void activateCardSuccess() {
+        Long cardId = 55L;
+        UUID ownerId = UUID.randomUUID();
+
+        CardEntity stored = CardEntity.builder()
+                .id(cardId)
+                .ownerId(ownerId)
+                .status(CardStatus.BLOCKED)
+                .panEncrypted("enc")
+                .panHash("hash")
+                .last4("9876")
+                .balance(500L)
+                .expiryMonth(8)
+                .expiryYear(2031)
+                .build();
+
+        when(cardEntityRepository.findById(cardId)).thenReturn(Optional.of(stored));
+        when(cardEntityRepository.save(any(CardEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ResponseEntity<?> response = adminCardService.activateCard(cardId);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertInstanceOf(CardResponseDto.class, response.getBody());
+        CardResponseDto body = (CardResponseDto) response.getBody();
+        CardResponseDto expectedDto = CardResponseDto.from(stored);
+        assertThat(body).usingRecursiveComparison().isEqualTo(expectedDto);
+
+        ArgumentCaptor<CardEntity> captor = ArgumentCaptor.forClass(CardEntity.class);
+        verify(cardEntityRepository).save(captor.capture());
+        assertEquals(CardStatus.ACTIVE, captor.getValue().getStatus());
+    }
+
+    @Test
+    @DisplayName("blockCard returns current data without save when already BLOCKED")
+    void blockCardNoChange() {
+        Long cardId = 89L;
+
+        CardEntity stored = CardEntity.builder()
+                .id(cardId)
+                .ownerId(UUID.randomUUID())
+                .status(CardStatus.BLOCKED)
+                .panEncrypted("enc")
+                .panHash("hash")
+                .last4("1111")
+                .expiryMonth(1)
+                .expiryYear(2030)
+                .build();
+
+        when(cardEntityRepository.findById(cardId)).thenReturn(Optional.of(stored));
+
+        ResponseEntity<?> response = adminCardService.blockCard(cardId);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertInstanceOf(CardResponseDto.class, response.getBody());
+        CardResponseDto body = (CardResponseDto) response.getBody();
+        assertThat(body).usingRecursiveComparison().isEqualTo(CardResponseDto.from(stored));
+
+        verify(cardEntityRepository, never()).save(any(CardEntity.class));
+    }
+
+    @Test
+    @DisplayName("blockCard returns 404 when card not found")
+    void blockCardNotFound() {
+        Long cardId = 999L;
+        when(cardEntityRepository.findById(cardId)).thenReturn(Optional.empty());
+
+        ResponseEntity<?> response = adminCardService.blockCard(cardId);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNull(response.getBody());
+    }
+
+    @Test
+    @DisplayName("activateCard returns 500 when repository throws")
+    void activateCardError() {
+        Long cardId = 101L;
+        when(cardEntityRepository.findById(cardId)).thenThrow(new RuntimeException("db error"));
+
+        ResponseEntity<?> response = adminCardService.activateCard(cardId);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals("db error", response.getBody());
     }
 }

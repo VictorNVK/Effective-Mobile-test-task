@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface ClientEntityRepository extends JpaRepository<ClientEntity, Long> {
 
     boolean existsClientEntityById(UUID id);
+
+    void deleteClientEntityById(UUID id);
 }

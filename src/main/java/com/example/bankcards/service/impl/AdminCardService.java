@@ -2,6 +2,7 @@ package com.example.bankcards.service.impl;
 
 import com.example.bankcards.dto.request.CardCreateRequestDto;
 import com.example.bankcards.dto.response.CardCreateResponseDto;
+import com.example.bankcards.dto.response.CardResponseDto;
 import com.example.bankcards.entity.CardEntity;
 import com.example.bankcards.entity.enums.CardStatus;
 import com.example.bankcards.repository.CardEntityRepository;
@@ -15,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class AdminCardService implements IAdminCardService {
@@ -26,9 +29,9 @@ public class AdminCardService implements IAdminCardService {
     @Override
     public ResponseEntity<?> createCard(CardCreateRequestDto cardCreateRequestDto) {
         try {
-            if(!clientEntityRepository.existsClientEntityById(cardCreateRequestDto.getOwnerId())){
+            /*if(!clientEntityRepository.existsClientEntityById(cardCreateRequestDto.getOwnerId())){
                 return ResponseEntity.noContent().build();
-            }
+            }*/
             CardGenerationResult generated = cardNumberGenerator.generate();
 
             CardEntity cardEntity = CardEntity.builder()
@@ -44,16 +47,7 @@ public class AdminCardService implements IAdminCardService {
 
             CardEntity saved = cardEntityRepository.save(cardEntity);
 
-            CardCreateResponseDto cardCreateResponseDto = CardCreateResponseDto.builder()
-                    .id(saved.getId())
-                    .ownerId(saved.getOwnerId())
-                    .maskedPan(saved.getMaskedPan())
-                    .expiryMonth(saved.getExpiryMonth())
-                    .expiryYear(saved.getExpiryYear())
-                    .plainPan(generated.plainPan())
-                    .build();
-
-            return new ResponseEntity<>(cardCreateResponseDto, HttpStatus.CREATED);
+            return new ResponseEntity<>(CardCreateResponseDto.from(saved, generated.plainPan()), HttpStatus.CREATED);
 
         } catch (DataIntegrityViolationException e) {
             return new ResponseEntity<>("Card with generated number already exists", HttpStatus.CONFLICT);
@@ -73,8 +67,13 @@ public class AdminCardService implements IAdminCardService {
     }
 
     @Override
-    public ResponseEntity<?> blockCard() {
-        return null;
+    public ResponseEntity<?> blockCard(Long cardId) {
+        return updateCardStatus(cardId, CardStatus.BLOCKED);
+    }
+
+    @Override
+    public ResponseEntity<?> activateCard(Long cardId) {
+        return updateCardStatus(cardId, CardStatus.ACTIVE);
     }
 
     @Override
@@ -85,5 +84,26 @@ public class AdminCardService implements IAdminCardService {
     @Override
     public ResponseEntity<?> getAllCards() {
         return null;
+    }
+
+    private ResponseEntity<?> updateCardStatus(Long cardId, CardStatus targetStatus) {
+        try {
+            Optional<CardEntity> cardOptional = cardEntityRepository.findById(cardId);
+            if (cardOptional.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            CardEntity cardEntity = cardOptional.get();
+
+            if (cardEntity.getStatus() == targetStatus) {
+                return ResponseEntity.ok(CardResponseDto.from(cardEntity));
+            }
+
+            cardEntity.setStatus(targetStatus);
+            CardEntity saved = cardEntityRepository.save(cardEntity);
+
+            return ResponseEntity.ok(CardResponseDto.from(saved));
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

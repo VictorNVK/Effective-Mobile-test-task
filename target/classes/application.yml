@@ -26,10 +26,12 @@ server:
     context-path: /api/v3
 
 springdoc:
-  api-docs:
-    enabled: ${SPRINGDOC_API_DOCS_ENABLED:false}
   swagger-ui:
-    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:false}
+    urls:
+      - name: Generated API
+        url: /v3/api-docs
+      - name: YAML Specification
+        url: /openapi.yaml
 
 logging:
   level:

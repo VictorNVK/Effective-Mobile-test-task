@@ -19,7 +19,16 @@ public class SecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(registry -> registry.anyRequest().permitAll());
+                .authorizeHttpRequests(registry -> registry
+                        .requestMatchers(
+                                "/api/v3/swagger-ui/**",
+                                "/api/v3/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/docs/**"
+                        ).permitAll()
+                        .anyRequest().permitAll()
+                );
 
         return http.build();
     }

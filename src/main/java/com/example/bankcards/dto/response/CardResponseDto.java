@@ -4,41 +4,36 @@ import com.example.bankcards.entity.CardEntity;
 import com.example.bankcards.entity.enums.CardStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 import java.util.UUID;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
-public class CardCreateResponseDto {
+@AllArgsConstructor
+@Getter
+public class CardResponseDto {
 
     private Long id;
 
     private UUID ownerId;
 
-    private String maskedPan;
-
     private CardStatus status;
+
+    private String maskedPan;
 
     private Integer expiryMonth;
 
     private Integer expiryYear;
 
-    private String plainPan;
 
-
-    public static CardCreateResponseDto from(CardEntity card, String plainPan) {
-        return CardCreateResponseDto.builder()
+    public static CardResponseDto from(CardEntity card) {
+        return CardResponseDto.builder()
                 .id(card.getId())
                 .ownerId(card.getOwnerId())
+                .status(card.getStatus())
                 .maskedPan(card.getMaskedPan())
                 .expiryMonth(card.getExpiryMonth())
                 .expiryYear(card.getExpiryYear())
-                .plainPan(plainPan)
-                .status(card.getStatus())
                 .build();
     }
 }

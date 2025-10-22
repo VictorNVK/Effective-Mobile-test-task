@@ -11,7 +11,9 @@ public interface IAdminCardService {
 
     ResponseEntity<?> updateCard();
 
-    ResponseEntity<?> blockCard();
+    ResponseEntity<?> blockCard(Long cardId);
+
+    ResponseEntity<?> activateCard(Long cardId);
 
     ResponseEntity<?> getCard();
 
