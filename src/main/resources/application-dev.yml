@@ -7,7 +7,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create #Поменять на Validate
+      ddl-auto: update #Поменять на Validate
     show-sql: true
     properties:
       hibernate:

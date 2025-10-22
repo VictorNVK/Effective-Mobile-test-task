@@ -52,6 +52,112 @@ paths:
               schema:
                 type: string
 
+  /admin/card/{cardId}:
+    get:
+      tags:
+        - Admin
+      operationId: getCardById
+      summary: Получить карту по идентификатору
+      parameters:
+        - $ref: '#/components/parameters/CardIdPathParam'
+      responses:
+        '200':
+          description: Карта найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponseDto'
+        '404':
+          description: Карта не найдена
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
+    delete:
+      tags:
+        - Admin
+      operationId: deleteCard
+      summary: Удалить карту
+      parameters:
+        - $ref: '#/components/parameters/CardIdPathParam'
+      responses:
+        '200':
+          description: Карта успешно удалена
+        '404':
+          description: Карта не найдена
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /admin/card/update/{cardId}:
+    patch:
+      tags:
+        - Admin
+      operationId: updateCard
+      summary: Обновить атрибуты карты
+      parameters:
+        - $ref: '#/components/parameters/CardIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardUpdateRequestDto'
+      responses:
+        '200':
+          description: Карта успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponseDto'
+        '400':
+          description: Невалидные данные запроса
+        '404':
+          description: Карта не найдена
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /admin/cards:
+    get:
+      tags:
+        - Admin
+      operationId: getAllCards
+      summary: Получить страницу карт
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Номер страницы (начиная с 0). На одной странице по 10 карт.
+      responses:
+        '200':
+          description: Список карт (не более 10 записей на странице)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CardResponseDto'
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /admin/card/{cardId}/block:
     patch:
       tags:
@@ -59,14 +165,7 @@ paths:
       operationId: blockCard
       summary: Заблокировать карту
       parameters:
-        - name: cardId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: Идентификатор карты
-          example: 1
+        - $ref: '#/components/parameters/CardIdPathParam'
       responses:
         '200':
           description: Статус карты обновлён на BLOCKED
@@ -90,14 +189,7 @@ paths:
       operationId: activateCard
       summary: Активировать карту
       parameters:
-        - name: cardId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: Идентификатор карты
-          example: 1
+        - $ref: '#/components/parameters/CardIdPathParam'
       responses:
         '200':
           description: Статус карты обновлён на ACTIVE
@@ -115,6 +207,17 @@ paths:
                 type: string
 
 components:
+  parameters:
+    CardIdPathParam:
+      name: cardId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: Идентификатор карты
+      example: 1
+
   schemas:
     CardCreateRequestDto:
       type: object
@@ -187,3 +290,28 @@ components:
           type: integer
           description: Год окончания срока действия
           example: 2027
+
+    CardUpdateRequestDto:
+      type: object
+      properties:
+        ownerId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Новый идентификатор владельца (опционально)
+        expiryMonth:
+          type: integer
+          minimum: 1
+          maximum: 12
+          description: Новый месяц окончания срока действия (1-12)
+          example: 12
+        expiryYear:
+          type: integer
+          minimum: 1
+          description: Новый год окончания срока действия (не может быть в прошлом)
+          example: 2028
+        status:
+          type: string
+          nullable: true
+          enum: [ACTIVE, BLOCKED, EXPIRED]
+          description: Новый статус карты

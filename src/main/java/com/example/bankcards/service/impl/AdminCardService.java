@@ -1,6 +1,7 @@
 package com.example.bankcards.service.impl;
 
 import com.example.bankcards.dto.request.CardCreateRequestDto;
+import com.example.bankcards.dto.request.CardUpdateRequestDto;
 import com.example.bankcards.dto.response.CardCreateResponseDto;
 import com.example.bankcards.dto.response.CardResponseDto;
 import com.example.bankcards.entity.CardEntity;
@@ -12,15 +13,21 @@ import com.example.bankcards.util.card_generator.CardGenerationResult;
 import com.example.bankcards.util.card_generator.ICardNumberGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AdminCardService implements IAdminCardService {
+
+    private static final int PAGE_SIZE = 10;
 
     private final CardEntityRepository cardEntityRepository;
     private final ICardNumberGenerator cardNumberGenerator;
@@ -29,13 +36,15 @@ public class AdminCardService implements IAdminCardService {
     @Override
     public ResponseEntity<?> createCard(CardCreateRequestDto cardCreateRequestDto) {
         try {
-            /*if(!clientEntityRepository.existsClientEntityById(cardCreateRequestDto.getOwnerId())){
+            UUID ownerId = cardCreateRequestDto.getOwnerId();
+            if (ownerId != null && !clientEntityRepository.existsClientEntityById(ownerId)) {
                 return ResponseEntity.noContent().build();
-            }*/
+            }
+
             CardGenerationResult generated = cardNumberGenerator.generate();
 
             CardEntity cardEntity = CardEntity.builder()
-                    .ownerId(cardCreateRequestDto.getOwnerId())
+                    .ownerId(ownerId)
                     .panEncrypted(generated.encryptedPan())
                     .last4(generated.last4())
                     .panHash(generated.panHash())
@@ -57,13 +66,47 @@ public class AdminCardService implements IAdminCardService {
     }
 
     @Override
-    public ResponseEntity<?> deleteCard() {
-        return null;
+    public ResponseEntity<?> deleteCard(Long id) {
+        try {
+            if(cardEntityRepository.existsById(id)) {
+                cardEntityRepository.deleteById(id);
+                return new ResponseEntity<>(HttpStatus.OK);
+            }else {
+                return new ResponseEntity<>("Card with id " + id + " does not exist", HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+           return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Override
-    public ResponseEntity<?> updateCard() {
-        return null;
+    public ResponseEntity<?> updateCard(CardUpdateRequestDto updateRequestDto, Long id) {
+        try {
+            Optional<CardEntity> cardEntityOptional = cardEntityRepository.findById(id);
+            if (cardEntityOptional.isEmpty()) {
+                return new ResponseEntity<>("Card with id " + id + " does not exist", HttpStatus.NOT_FOUND);
+            }
+
+            if (!updateRequestDto.isExpiryDateValid()) {
+                return new ResponseEntity<>("Incorrect date!", HttpStatus.BAD_REQUEST);
+            }
+
+            CardEntity cardEntity = cardEntityOptional.get();
+
+            if (updateRequestDto.getOwnerId() != null) {
+                cardEntity.setOwnerId(updateRequestDto.getOwnerId());
+            }
+            cardEntity.setExpiryMonth(updateRequestDto.getExpiryMonth());
+            cardEntity.setExpiryYear(updateRequestDto.getExpiryYear());
+            if (updateRequestDto.getStatus() != null) {
+                cardEntity.setStatus(updateRequestDto.getStatus());
+            }
+
+            CardEntity saved = cardEntityRepository.save(cardEntity);
+            return ResponseEntity.ok().body(CardResponseDto.from(saved));
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Override
@@ -77,13 +120,31 @@ public class AdminCardService implements IAdminCardService {
     }
 
     @Override
-    public ResponseEntity<?> getCard() {
-        return null;
+    public ResponseEntity<?> getCard(Long id) {
+        try {
+            Optional<CardEntity> cardEntity = cardEntityRepository.findById(id);
+            if(cardEntity.isPresent()) {
+                return ResponseEntity.ok(CardResponseDto.from(cardEntity.get()));
+            }else {
+                return new ResponseEntity<>("Card with id " + id + " does not exist", HttpStatus.NOT_FOUND);
+            }
+        }catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Override
-    public ResponseEntity<?> getAllCards() {
-        return null;
+    public ResponseEntity<?> getAllCards(Integer page) {
+        try {
+            int pageNumber = (page == null || page < 0) ? 0 : page;
+            PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by("id").ascending());
+            Page<CardResponseDto> cardsPage = cardEntityRepository.findAll(pageRequest)
+                    .map(CardResponseDto::from);
+
+            return ResponseEntity.ok(cardsPage.getContent());
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     private ResponseEntity<?> updateCardStatus(Long cardId, CardStatus targetStatus) {
