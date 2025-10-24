@@ -2,7 +2,9 @@ package com.example.bankcards.controller;
 
 import com.example.bankcards.dto.request.CardCreateRequestDto;
 import com.example.bankcards.dto.request.CardUpdateRequestDto;
+import com.example.bankcards.dto.request.CreateUserRequestDto;
 import com.example.bankcards.service.IAdminCardService;
+import com.example.bankcards.service.IAdminUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -17,6 +19,7 @@ import java.util.UUID;
 public class AdminController {
 
     private final IAdminCardService adminCardService;
+    private final IAdminUserService adminUserService;
 
     @PostMapping("/card/create")
     public ResponseEntity<?> createCard(@RequestBody @Valid CardCreateRequestDto cardCreateRequestDto) {
@@ -24,7 +27,7 @@ public class AdminController {
     }
 
     @GetMapping("/cards")
-    public ResponseEntity<?> getAllCards(@Parameter(description = "Zero-based page index", example = "0")
+    public ResponseEntity<?> getAllCards(@Parameter(description = "Zero based page index", example = "0")
                                          @RequestParam(value = "page", defaultValue = "0") Integer page) {
         return adminCardService.getAllCards(page);
     }
@@ -58,6 +61,38 @@ public class AdminController {
             @Valid @RequestBody CardUpdateRequestDto cardUpdateRequestDto
                                        ) {
         return adminCardService.updateCard(cardUpdateRequestDto, cardId);
+    }
+
+    @PostMapping("/user")
+    public ResponseEntity<?> addUser(@Parameter(description = "User payload", required = true)
+                                     @RequestBody @Valid CreateUserRequestDto createUserRequestDto){
+        return adminUserService.addUser(createUserRequestDto);
+    }
+
+    @DeleteMapping("/user/{id}")
+    public ResponseEntity<?> deleteUser(@Parameter(description = "User identifier", required = true)
+                                        @PathVariable UUID id){
+        return adminUserService.deleteUser(id);
+    }
+
+    @PatchMapping("/user/{id}")
+    public ResponseEntity<?> updateUser(@Parameter(description = "User identifier", required = true)
+                                        @PathVariable UUID id,
+                                        @Parameter(description = "User payload", required = true)
+                                        @RequestBody @Valid CreateUserRequestDto createUserRequestDto){
+        return adminUserService.updateUser(id, createUserRequestDto);
+    }
+
+    @GetMapping("/user/{id}")
+    public ResponseEntity<?> getUser(@Parameter(description = "User identifier", required = true)
+                                     @PathVariable UUID id){
+        return adminUserService.getUser(id);
+    }
+
+    @GetMapping("/users/{page}")
+    public ResponseEntity<?> getUsers(@Parameter(description = "Zero-based page index", example = "0", required = true)
+                                      @PathVariable("page") Integer page){
+        return adminUserService.getUsers(page);
     }
 
 }

@@ -15,4 +15,6 @@ public interface ClientEntityRepository extends JpaRepository<ClientEntity, Long
     void deleteClientEntityById(UUID id);
 
     Optional<ClientEntity> findByLogin(String login);
+
+    Optional<ClientEntity> getClientEntityById(UUID id);
 }

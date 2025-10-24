@@ -218,6 +218,155 @@ paths:
               schema:
                 type: string
 
+  /admin/user:
+    post:
+      tags:
+        - Admin
+      operationId: addUser
+      summary: Создать нового пользователя
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequestDto'
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserGetResponseDto'
+        '400':
+          description: Невалидные данные запроса
+        '409':
+          description: Пользователь с таким логином уже существует
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /admin/user/{id}:
+    get:
+      tags:
+        - Admin
+      operationId: getUser
+      summary: Получить пользователя по идентификатору
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathParam'
+      responses:
+        '200':
+          description: Пользователь найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserGetResponseDto'
+        '404':
+          description: Пользователь не найден
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
+    delete:
+      tags:
+        - Admin
+      operationId: deleteUser
+      summary: Удалить пользователя
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathParam'
+      responses:
+        '200':
+          description: Пользователь удалён
+        '404':
+          description: Пользователь не найден
+        '400':
+          description: Некорректный запрос
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
+    patch:
+      tags:
+        - Admin
+      operationId: updateUser
+      summary: Обновить пользователя
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequestDto'
+      responses:
+        '200':
+          description: Пользователь обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserGetResponseDto'
+        '400':
+          description: Невалидные данные запроса
+        '404':
+          description: Пользователь не найден
+        '409':
+          description: Пользователь с таким логином уже существует
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /admin/users/{page}:
+    get:
+      tags:
+        - Admin
+      operationId: getUsers
+      summary: Получить страницу пользователей
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Номер страницы (начиная с 0). На одной странице по 10 пользователей.
+      responses:
+        '200':
+          description: Список пользователей (не более 10 записей на странице)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserGetResponseDto'
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /admin/card/{cardId}/block:
     patch:
       tags:
@@ -286,6 +435,16 @@ components:
         format: int64
       description: Идентификатор карты
       example: 1
+
+    UserIdPathParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Идентификатор пользователя
+      example: "550e8400-e29b-41d4-a716-446655440000"
 
   schemas:
     CardCreateRequestDto:
@@ -438,3 +597,32 @@ components:
       type: string
       enum: [ADMIN, USER]
       description: Роль, с которой производится аутентификация
+
+    CreateUserRequestDto:
+      type: object
+      required:
+        - login
+        - password
+      properties:
+        login:
+          type: string
+          description: Логин пользователя
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: Пароль пользователя
+          example: StrongPassword123
+
+    UserGetResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор пользователя
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        login:
+          type: string
+          description: Логин пользователя
+          example: user@example.com
