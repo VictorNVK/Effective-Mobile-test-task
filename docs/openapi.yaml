@@ -13,17 +13,69 @@ servers:
   - url: http://localhost:63342
     description: IntelliJ internal server (read-only, do not use)
 x-localhost-example: http://localhost:8901/api/v3
+security:
+  - bearerAuth: []
 tags:
   - name: Admin
     description: Administrative operations over cards
+  - name: Auth
+    description: Аутентификация и управление JWT токенами
 
 paths:
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      operationId: login
+      summary: Войти в систему и получить пару JWT токенов
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequestDto'
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+        '400':
+          description: Невалидные данные запроса
+        '401':
+          description: Неверные учетные данные
+
+  /auth/refresh:
+    post:
+      tags:
+        - Auth
+      operationId: refreshTokens
+      summary: Обновить пару JWT токенов по refresh-токену
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequestDto'
+      responses:
+        '200':
+          description: Новая пара токенов выдана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+        '400':
+          description: Невалидные данные или истекший refresh-токен
+
   /admin/card/create:
     post:
       tags:
         - Admin
       operationId: createCard
       summary: Создать карту для клиента
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -58,6 +110,8 @@ paths:
         - Admin
       operationId: getCardById
       summary: Получить карту по идентификатору
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/CardIdPathParam'
       responses:
@@ -81,6 +135,8 @@ paths:
         - Admin
       operationId: deleteCard
       summary: Удалить карту
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/CardIdPathParam'
       responses:
@@ -101,6 +157,8 @@ paths:
         - Admin
       operationId: updateCard
       summary: Обновить атрибуты карты
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/CardIdPathParam'
       requestBody:
@@ -133,6 +191,8 @@ paths:
         - Admin
       operationId: getAllCards
       summary: Получить страницу карт
+      security:
+        - bearerAuth: []
       parameters:
         - name: page
           in: query
@@ -164,6 +224,8 @@ paths:
         - Admin
       operationId: blockCard
       summary: Заблокировать карту
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/CardIdPathParam'
       responses:
@@ -188,6 +250,8 @@ paths:
         - Admin
       operationId: activateCard
       summary: Активировать карту
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/CardIdPathParam'
       responses:
@@ -207,6 +271,11 @@ paths:
                 type: string
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
     CardIdPathParam:
       name: cardId
@@ -315,3 +384,57 @@ components:
           nullable: true
           enum: [ACTIVE, BLOCKED, EXPIRED]
           description: Новый статус карты
+    AuthRequestDto:
+      type: object
+      required:
+        - login
+        - password
+        - role
+      properties:
+        login:
+          type: string
+          description: Логин пользователя
+          example: admin@example.com
+        password:
+          type: string
+          format: password
+          description: Пароль пользователя
+          example: P@ssw0rd
+        role:
+          $ref: '#/components/schemas/RoleType'
+
+    RefreshTokenRequestDto:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh токен, выданный ранее методом /auth/login
+
+    AuthResponseDto:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: Access токен для авторизации
+        accessTokenExpiresIn:
+          type: integer
+          format: int64
+          description: Время жизни access токена в секундах
+        refreshToken:
+          type: string
+          description: Refresh токен для получения новой пары токенов
+        refreshTokenExpiresIn:
+          type: integer
+          format: int64
+          description: Время жизни refresh токена в секундах
+        tokenType:
+          type: string
+          description: Тип токена (обычно Bearer)
+          example: Bearer
+
+    RoleType:
+      type: string
+      enum: [ADMIN, USER]
+      description: Роль, с которой производится аутентификация

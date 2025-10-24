@@ -33,6 +33,13 @@ springdoc:
       - name: YAML Specification
         url: /openapi.yaml
 
+security:
+  jwt:
+    secret: ${JWT_SECRET:uY8p0zS9m4Xk6+6JGZveHFkNjEcNWef39/C4R2tQeM0=}
+    access-token-ttl: ${JWT_ACCESS_TTL:900}
+    refresh-token-ttl: ${JWT_REFRESH_TTL:2592000}
+    issuer: bankcards-api
+
 logging:
   level:
     root: INFO
