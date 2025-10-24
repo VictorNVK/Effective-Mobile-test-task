@@ -20,6 +20,8 @@ tags:
     description: Administrative operations over cards
   - name: Auth
     description: Аутентификация и управление JWT токенами
+  - name: User
+    description: Операции пользователя со своими картами
 
 paths:
   /auth/login:
@@ -626,3 +628,152 @@ components:
           type: string
           description: Логин пользователя
           example: user@example.com
+
+  /user/cards:
+    get:
+      tags:
+        - User
+      operationId: getOwnCards
+      summary: Получить страницу собственных карт
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Номер страницы (начиная с 0). На одной странице по 10 карт.
+      responses:
+        '200':
+          description: Список карт пользователя
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CardResponseDto'
+        '401':
+          description: Пользователь не авторизован
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /user/transfer:
+    post:
+      tags:
+        - User
+      operationId: transferOwnCards
+      summary: Перевод между собственными картами
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardTransferRequestDto'
+      responses:
+        '200':
+          description: Перевод выполнен успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardTransferResponseDto'
+        '400':
+          description: Некорректные данные или недостаточный баланс
+        '401':
+          description: Пользователь не авторизован
+        '404':
+          description: Одна из карт не найдена
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /user/card/{cardId}/balance:
+    get:
+      tags:
+        - User
+      operationId: getOwnCardBalance
+      summary: Получить баланс собственной карты
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Идентификатор карты
+      responses:
+        '200':
+          description: Баланс карты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardBalanceResponseDto'
+        '400':
+          description: Некорректный запрос
+        '401':
+          description: Пользователь не авторизован
+        '404':
+          description: Карта не найдена
+        '500':
+          description: Внутренняя ошибка сервиса
+          content:
+            text/plain:
+              schema:
+                type: string
+
+    CardTransferRequestDto:
+      type: object
+      required:
+        - fromCardId
+        - toCardId
+        - amount
+      properties:
+        fromCardId:
+          type: integer
+          format: int64
+          description: Идентификатор карты-источника
+        toCardId:
+          type: integer
+          format: int64
+          description: Идентификатор карты-получателя
+        amount:
+          type: integer
+          minimum: 1
+          description: Сумма перевода в минимальных единицах
+
+    CardTransferResponseDto:
+      type: object
+      properties:
+        fromCardId:
+          type: integer
+          format: int64
+        fromBalance:
+          type: integer
+        toCardId:
+          type: integer
+          format: int64
+        toBalance:
+          type: integer
+
+    CardBalanceResponseDto:
+      type: object
+      properties:
+        cardId:
+          type: integer
+          format: int64
+        balance:
+          type: integer
+*** End Patch

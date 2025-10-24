@@ -36,7 +36,7 @@ public class CardEntity {
     private CardStatus status;
 
     @Column(name = "balance")
-    private Long balance;
+    private Long balance = 0L;
 
     @Column(name = "expiry_month")
     private Integer expiryMonth;
