@@ -1,12 +1,15 @@
 package com.example.bankcards.service.impl;
 
 import com.example.bankcards.dto.request.CardTransferRequestDto;
+import com.example.bankcards.dto.response.ApplicationResponseDto;
 import com.example.bankcards.dto.response.CardBalanceResponseDto;
 import com.example.bankcards.dto.response.CardResponseDto;
 import com.example.bankcards.dto.response.CardTransferResponseDto;
+import com.example.bankcards.entity.ApplicationEntity;
 import com.example.bankcards.entity.CardEntity;
 import com.example.bankcards.entity.ClientEntity;
 import com.example.bankcards.entity.enums.CardStatus;
+import com.example.bankcards.repository.ApplicationEntityRepository;
 import com.example.bankcards.repository.CardEntityRepository;
 import com.example.bankcards.repository.ClientEntityRepository;
 import com.example.bankcards.service.IUserCardService;
@@ -30,6 +33,7 @@ public class UserCardService implements IUserCardService {
 
     private final CardEntityRepository cardEntityRepository;
     private final ClientEntityRepository clientEntityRepository;
+    private final ApplicationEntityRepository applicationEntityRepository;
 
     @Override
     public ResponseEntity<?> getCards(Integer page, UserDetails userDetails) {
@@ -47,6 +51,50 @@ public class UserCardService implements IUserCardService {
                     .map(CardResponseDto::from);
 
             return ResponseEntity.ok(cardPage.getContent());
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> requestCardBlock(Long cardId, UserDetails userDetails) {
+        try {
+            if (cardId == null) {
+                return new ResponseEntity<>("Card identifier must be provided", HttpStatus.BAD_REQUEST);
+            }
+
+            Optional<ClientEntity> clientOptional = resolveClient(userDetails);
+            if (clientOptional.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
+
+            UUID ownerId = clientOptional.get().getId();
+
+            Optional<CardEntity> cardOptional = cardEntityRepository.findByIdAndOwnerId(cardId, ownerId);
+            if (cardOptional.isEmpty()) {
+                return new ResponseEntity<>("Card not found", HttpStatus.NOT_FOUND);
+            }
+
+            if (applicationEntityRepository.existsByCardIdAndApprovedIsFalse(cardId)) {
+                return new ResponseEntity<>("Block request already submitted for this card", HttpStatus.CONFLICT);
+            }
+
+            CardEntity cardEntity = cardOptional.get();
+            if (cardEntity.getStatus() == CardStatus.BLOCKED) {
+                return new ResponseEntity<>("Card is already blocked", HttpStatus.BAD_REQUEST);
+            }
+
+            cardEntity.setStatus(CardStatus.BLOCKED);
+            cardEntityRepository.save(cardEntity);
+
+            ApplicationEntity application = ApplicationEntity.builder()
+                    .accountId(ownerId)
+                    .cardId(cardId)
+                    .approved(Boolean.FALSE)
+                    .build();
+
+            ApplicationEntity savedApplication = applicationEntityRepository.save(application);
+            return new ResponseEntity<>(ApplicationResponseDto.from(savedApplication), HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }

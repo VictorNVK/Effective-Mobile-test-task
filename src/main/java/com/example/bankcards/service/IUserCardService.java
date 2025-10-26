@@ -8,13 +8,10 @@ public interface IUserCardService {
 
     ResponseEntity<?> getCards(Integer page, UserDetails userDetails);
 
-    //Метод для запроса блокировки карты ToDo
+    ResponseEntity<?> requestCardBlock(Long cardId, UserDetails userDetails);
 
     ResponseEntity<?> transfer(CardTransferRequestDto cardTransferRequestDto,  UserDetails userDetails);
 
     ResponseEntity<?> getBalance(Long cardId, UserDetails userDetails);
-
-
-
 
 }

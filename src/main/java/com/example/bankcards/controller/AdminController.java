@@ -33,7 +33,7 @@ public class AdminController {
     }
 
     @PatchMapping("/card/block/{cardId}")
-    public ResponseEntity<?> blockCard(@Parameter(description = "Card identifier", required = true)
+    public ResponseEntity<?> blockCard(@Parameter(name = "cardId", description = "Card identifier", required = true)
                                        @PathVariable("cardId") Long cardId) {
         return adminCardService.blockCard(cardId);
     }
@@ -71,21 +71,21 @@ public class AdminController {
 
     @DeleteMapping("/user/{id}")
     public ResponseEntity<?> deleteUser(@Parameter(description = "User identifier", required = true)
-                                        @PathVariable UUID id){
+                                        @PathVariable("id") UUID id){
         return adminUserService.deleteUser(id);
     }
 
     @PatchMapping("/user/{id}")
     public ResponseEntity<?> updateUser(@Parameter(description = "User identifier", required = true)
-                                        @PathVariable UUID id,
+                                        @PathVariable("id") UUID id,
                                         @Parameter(description = "User payload", required = true)
-                                        @RequestBody @Valid CreateUserRequestDto createUserRequestDto){
+                                       @RequestBody @Valid CreateUserRequestDto createUserRequestDto){
         return adminUserService.updateUser(id, createUserRequestDto);
     }
 
     @GetMapping("/user/{id}")
     public ResponseEntity<?> getUser(@Parameter(description = "User identifier", required = true)
-                                     @PathVariable UUID id){
+                                     @PathVariable("id") UUID id){
         return adminUserService.getUser(id);
     }
 
@@ -95,4 +95,17 @@ public class AdminController {
         return adminUserService.getUsers(page);
     }
 
+    @GetMapping("/applications")
+    public ResponseEntity<?> getApplications(@Parameter(description = "Zero based page index", example = "0")
+                                             @RequestParam(value = "page", defaultValue = "0") Integer page,
+                                             @Parameter(description = "Filter by approval status")
+                                             @RequestParam(value = "approved", required = false) Boolean approved) {
+        return adminCardService.getApplications(page, approved);
+    }
+
+    @PatchMapping("/application/{applicationId}/approve")
+    public ResponseEntity<?> approveApplication(@Parameter(description = "Application identifier", required = true)
+                                                @PathVariable("applicationId") UUID applicationId) {
+        return adminCardService.approveApplication(applicationId);
+    }
 }

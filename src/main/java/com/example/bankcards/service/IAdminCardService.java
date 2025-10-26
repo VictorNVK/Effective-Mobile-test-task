@@ -21,4 +21,8 @@ public interface IAdminCardService {
     ResponseEntity<?> getCard(Long id);
 
     ResponseEntity<?> getAllCards(Integer page);
+
+    ResponseEntity<?> approveApplication(UUID applicationId);
+
+    ResponseEntity<?> getApplications(Integer page, Boolean approved);
 }

@@ -41,9 +41,17 @@ public class UserController {
 
     @GetMapping("/card/{cardId}/balance")
     public ResponseEntity<?> getBalance(@Parameter(description = "Card identifier", required = true)
-                                        @PathVariable Long cardId,
+                                        @PathVariable("cardId") Long cardId,
                                         @Parameter(hidden = true)
                                         @AuthenticationPrincipal UserDetails userDetails) {
         return userCardService.getBalance(cardId, userDetails);
+    }
+    
+    @PostMapping("/card/{cardId}/block")
+    public ResponseEntity<?> requestCardBlock(@Parameter(name = "cardId", description = "Card identifier", required = true)
+                                              @PathVariable("cardId") Long cardId,
+                                              @Parameter(hidden = true)
+                                              @AuthenticationPrincipal UserDetails userDetails) {
+        return userCardService.requestCardBlock(cardId, userDetails);
     }
 }
