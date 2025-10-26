@@ -176,3 +176,33 @@ databaseChangeLog:
                   name: password
                   value: $2a$12$A/6SPztHwKQbfjhMMz1s2OujV68UXSx1RYST04h7DQ0dlOBCullqO
             where: username = 'admin'
+  - changeSet:
+      id: 7-create-applications-table
+      author: codex
+      changes:
+        - createTable:
+            tableName: applications
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: account_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: card_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: approved
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+      rollback:
+        - dropTable:
+            tableName: applications
